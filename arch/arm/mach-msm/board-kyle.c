@@ -86,13 +86,22 @@
 
 /* GGSM sc47.yun CSR7820 Project 2012.04.23 */
 #ifdef CONFIG_BT_CSR_7820
-//#include <../../../drivers/bluetooth/bluesleep.c> //SAMSUNG_BT_CONFIG
 
 #define GPIO_WLAN_LEVEL_LOW			0
 #define GPIO_WLAN_LEVEL_HIGH			1
 #define GPIO_WLAN_LEVEL_NONE			2
 #endif
 /* GGSM sc47.yun CSR7820 Project end */
+
+// to avoid undesirable raising of VCC_1.8V which is caused by SDC2 signal,
+// in WIFI OFF state, we make all signal lines(including SDC2 data and CLK) pulled-down.
+// SJINU, 2013_05_27
+
+#ifdef CONFIG_MACH_KYLE
+void wlan_suspend_gpio_config(int on_off);
+#define WLAN_TURNED_ON 	1
+#define WLAN_TURNED_OFF 0
+#endif
 
 #define PMEM_KERNEL_EBI1_SIZE	0x3A000
 #define MSM_PMEM_AUDIO_SIZE	0x5B000
@@ -238,12 +247,10 @@ static void update_msm7x27a_earjack_type(bool state)
 }
 #endif
 
-#if 1
 static int sec_jack_get_adc_value(void)
 {
 	return current_jack_type;//Kuldeep Commented For porting
 }
-#endif
 
 
 void sec_jack_gpio_init(void)
@@ -321,6 +328,12 @@ static unsigned int wlan_status(struct device *dev)
 
 	rc = gpio_get_value(GPIO_WLAN_RESET_N/*gpio_wlan_reset_n*/);
 
+#ifdef CONFIG_MACH_KYLE
+	if(!rc)
+	{
+		wlan_suspend_gpio_config(WLAN_TURNED_OFF);
+	}
+#endif	
 	return rc;
 }
 #endif /* ATH_POLLING */
@@ -407,11 +420,8 @@ static int gp2a_power(bool on)
 				GPIO_CFG_ENABLE);
 #else
 	int rc = 0;
-    int proximity_init = false;
-//	if(board_hw_revision >= 0x06) {
-	if(1) {
-		if (proximity_init == false) {
-			pr_info("[GP2A board hw revision %d\n",
+    
+			pr_info("[GP2A] board hw revision %d\n",
 					board_hw_revision);
 			struct pm8xxx_gpio_rpc_cfg gpio_cfg = {
 				.gpio = PMIC_GPIO_11,
@@ -435,7 +445,6 @@ static int gp2a_power(bool on)
 						GPIO_CFG_PULL_UP,
 						GPIO_CFG_2MA),
 					GPIO_CFG_ENABLE);
-		}
 
 		 if (on) {
 	             pr_err("%s pmic gpio set to 1 ",
@@ -452,14 +461,7 @@ static int gp2a_power(bool on)
 	                 pr_err("%s pmic gpio set 0 error ",
 			                    __func__);
 			 }
-	}else {
-		gpio_tlmm_config(
-				GPIO_CFG(29,0,
-					 GPIO_CFG_INPUT,
-					 GPIO_CFG_PULL_UP,
-					 GPIO_CFG_2MA),
-				GPIO_CFG_ENABLE);
-	}
+        
 printk("End of gp2a function");
 #endif
 #endif//CONFIG_MACH_KYLE_I
@@ -1197,6 +1199,13 @@ static int wlan_set_gpio(unsigned gpio, int on)
 		return -1;
 	}
 
+#ifdef CONFIG_MACH_KYLE
+	if( (gpio==GPIO_WLAN_RESET_N) && (on==WLAN_TURNED_ON))
+	{
+		wlan_suspend_gpio_config(WLAN_TURNED_ON);
+	}
+#endif
+
 	gpio_value = gpio_get_value(gpio);
 	printk(KERN_INFO "%s: before (%d) :: gpio_get_value = %d",
 			__func__, on, gpio_value);
@@ -1208,6 +1217,13 @@ static int wlan_set_gpio(unsigned gpio, int on)
 	gpio_value = gpio_get_value(gpio);
 	printk(KERN_INFO "%s: after (%d) :: gpio_get_value = %d",
 			__func__, on, gpio_value);
+
+#ifdef CONFIG_MACH_KYLE
+	if( (gpio==GPIO_WLAN_RESET_N) && (on==WLAN_TURNED_OFF))
+	{
+		wlan_suspend_gpio_config(WLAN_TURNED_OFF);
+	}
+#endif
 
 	if (rc) {
 		printk(KERN_ERR "%s: gpio_direction_output for %d failed\n",
@@ -3711,6 +3727,55 @@ static void config_gpio_table(uint32_t *table, int len)
         }
     }
 }
+
+#ifdef CONFIG_MACH_KYLE
+
+#define GPIO_SDC2_CLK		62
+#define GPIO_SDC2_CMD		63
+#define GPIO_SDC2_DATA3		64
+#define GPIO_SDC2_DATA2		65
+#define GPIO_SDC2_DATA1		66
+#define GPIO_SDC2_DATA0		67
+
+static uint32_t wlan_power_off_config[]= {
+	GPIO_CFG(GPIO_SDC2_CLK,   0, GPIO_CFG_OUTPUT, GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA),	/* 63	WLAN_SD_CMD 					 */ 		
+	GPIO_CFG(GPIO_SDC2_CMD,   0, GPIO_CFG_OUTPUT, GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA),	/* 63	WLAN_SD_CMD 					 */ 		
+	GPIO_CFG(GPIO_SDC2_DATA3, 0, GPIO_CFG_OUTPUT, GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA),	/* 64	WLAN_SD_DATA(3) 				 */ 		
+	GPIO_CFG(GPIO_SDC2_DATA2, 0, GPIO_CFG_OUTPUT, GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA),	/* 65	WLAN_SD_DATA(2) 				 */ 		
+	GPIO_CFG(GPIO_SDC2_DATA1, 0, GPIO_CFG_OUTPUT, GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA),	/* 66	WLAN_SD_DATA(1) 				 */ 		
+	GPIO_CFG(GPIO_SDC2_DATA0, 0, GPIO_CFG_OUTPUT, GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA),	/* 67	WLAN_SD_DATA(0) 				 */ 		
+};
+
+static uint32_t wlan_power_on_config[]= {
+	GPIO_CFG(GPIO_SDC2_CLK,   2, GPIO_CFG_OUTPUT, GPIO_CFG_NO_PULL, GPIO_CFG_8MA),	/* 63	WLAN_SD_CMD 					 */ 		
+	GPIO_CFG(GPIO_SDC2_CMD,   2, GPIO_CFG_OUTPUT, GPIO_CFG_PULL_UP, GPIO_CFG_8MA),	/* 63	WLAN_SD_CMD 		             */         
+	GPIO_CFG(GPIO_SDC2_DATA3, 2, GPIO_CFG_OUTPUT, GPIO_CFG_PULL_UP, GPIO_CFG_8MA),	/* 64	WLAN_SD_DATA(3) 	             */         
+	GPIO_CFG(GPIO_SDC2_DATA2, 2, GPIO_CFG_OUTPUT, GPIO_CFG_PULL_UP, GPIO_CFG_8MA),	/* 65	WLAN_SD_DATA(2) 	             */         
+	GPIO_CFG(GPIO_SDC2_DATA1, 2, GPIO_CFG_OUTPUT, GPIO_CFG_PULL_UP, GPIO_CFG_8MA),	/* 66	WLAN_SD_DATA(1) 	             */         
+	GPIO_CFG(GPIO_SDC2_DATA0, 2, GPIO_CFG_OUTPUT, GPIO_CFG_PULL_UP, GPIO_CFG_8MA),	/* 67	WLAN_SD_DATA(0) 	             */         
+};
+
+
+void wlan_suspend_gpio_config(int on_off)
+{
+	if(on_off == WLAN_TURNED_ON)
+	{
+		config_gpio_table(wlan_power_on_config, ARRAY_SIZE(wlan_power_off_config));
+	}
+	else {
+		config_gpio_table(wlan_power_off_config, ARRAY_SIZE(wlan_power_off_config));
+		gpio_direction_output(GPIO_SDC2_CLK, GPIO_WLAN_LEVEL_LOW);
+		gpio_direction_output(GPIO_SDC2_CMD, GPIO_WLAN_LEVEL_LOW);		
+		gpio_direction_output(GPIO_SDC2_DATA3, GPIO_WLAN_LEVEL_LOW);		
+		gpio_direction_output(GPIO_SDC2_DATA2, GPIO_WLAN_LEVEL_LOW);		
+		gpio_direction_output(GPIO_SDC2_DATA1, GPIO_WLAN_LEVEL_LOW);		
+		gpio_direction_output(GPIO_SDC2_DATA0, GPIO_WLAN_LEVEL_LOW);		
+	}
+}
+EXPORT_SYMBOL(wlan_suspend_gpio_config);
+#endif
+
+
 
 static int bluetooth_power(int on)
 {
