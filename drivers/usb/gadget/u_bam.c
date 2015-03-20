@@ -1204,7 +1204,10 @@ int gbam_setup(unsigned int no_bam_port, unsigned int no_bam2bam_port)
 			goto free_bam_ports;
 		}
 	}
+    #ifdef CONFIG_DEBUG_FS
 	gbam_debugfs_init();
+    #endif
+    
 	return 0;
 
 free_bam_ports:

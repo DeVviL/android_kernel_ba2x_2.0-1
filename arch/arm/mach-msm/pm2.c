@@ -1667,7 +1667,9 @@ static int msm_pm_enter(suspend_state_t state)
 #endif
 
 		clock_debug_print_enabled();
+#ifdef CONFIG_DEBUG_FS
 		regulator_showall_enabled();
+#endif
 
 #ifdef CONFIG_MSM_SLEEP_TIME_OVERRIDE
 		if (msm_pm_sleep_time_override > 0) {

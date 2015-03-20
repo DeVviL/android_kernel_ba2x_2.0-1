@@ -34,6 +34,10 @@
 #define DRIVER_VERSION_MAJOR   3
 #define DRIVER_VERSION_MINOR   1
 
+#ifndef CONFIG_DEBUG_FS
+unsigned int kgsl_cff_dump_enable=0;
+#endif
+
 /* Adreno MH arbiter config*/
 #define ADRENO_CFG_MHARB \
 	(0x10 \

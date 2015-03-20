@@ -1483,7 +1483,10 @@ static int android_bind(struct usb_composite_dev *cdev)
 {
 	struct android_dev *dev = _android_dev;
 	struct usb_gadget	*gadget = cdev->gadget;
-	int			gcnum, id, ret;
+    #if 0
+    int gcnum;
+    #endif
+	int	id, ret;
 
 	printk(KERN_DEBUG "usb: %s\n", __func__);
 	usb_gadget_disconnect(gadget);

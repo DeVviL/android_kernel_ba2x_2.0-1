@@ -728,12 +728,6 @@ static void fdiag_debugfs_init(void)
 
 	debugfs_create_file("status", 0444, dent_diag, 0, &debug_fdiag_ops);
 }
-#else
-static void fdiag_debugfs_init(void)
-{
-	return;
-}
-#endif
 
 static void diag_cleanup(void)
 {
@@ -757,6 +751,18 @@ static void diag_cleanup(void)
 		spin_unlock_irqrestore(&ch_lock, flags);
 	}
 }
+
+#else
+static void fdiag_debugfs_init(void)
+{
+	return;
+}
+
+static void diag_cleanup(void)
+{
+	return;
+}
+#endif
 
 static int diag_setup(void)
 {
