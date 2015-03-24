@@ -146,7 +146,7 @@ static void hsuart_power(int on)
 {
 	#ifdef CONFIG_BT_CSR_7820
 	if (bsi->uport == NULL) {
-		BT_INFO("hsuart_power...but bsi->uport == NULL , so return");
+		BT_INFO("hsuart_power(), but bsi->uport == NULL , so return");
 		return ;
 	}
 	#endif
@@ -170,9 +170,6 @@ static void hsuart_power(int on)
  */
 static inline int bluesleep_can_sleep(void)
 {
-    if (bsi->uport == NULL) {
-        BT_INFO("bsi->uport == NULL");
-    }
 	/* check if MSM_WAKE_BT_GPIO and BT_WAKE_MSM_GPIO are both deasserted */
 	#ifdef CONFIG_BT_CSR_7820
     int ret;
@@ -222,10 +219,10 @@ static void bluesleep_sleep_work(struct work_struct *work)
 		#ifdef CONFIG_BT_CSR_7820
 		if (msm_hs_tx_empty(bsi->uport)) {
 			bt_enter_sleep_mode_cnt++;
-			BT_INFO("hsuart_power...bt_enter_sleep_mode_cnt ++");
+			//BT_INFO("hsuart_power...bt_enter_sleep_mode_cnt ++");
 		} else {
 			bt_enter_sleep_mode_cnt = 0;
-			BT_INFO("hsuart_power...bt_enter_sleep_mode_cnt init");
+			//BT_INFO("hsuart_power...bt_enter_sleep_mode_cnt init");
 		}
 		#endif
 
@@ -332,11 +329,11 @@ static int bluesleep_hci_event(struct notifier_block *this,
 			hu  = (struct hci_uart *) hci_get_drvdata(hdev);
 			state = (struct uart_state *) hu->tty->driver_data;
 			bsi->uport = state->uart_port;
-			printk(KERN_ERR "[BT] wake_peer is registered.\n");
+			printk(KERN_ERR "Bluetooth: wake_peer is registered.\n");
 		}
 		break;
 	case HCI_DEV_UNREG:
-		printk(KERN_ERR "[BT] wake_peer is unregistered.\n");
+		printk(KERN_ERR "Bluetooth: wake_peer is unregistered.\n");
 		bluesleep_hdev = NULL;
 		bsi->uport = NULL;
 		break;
@@ -414,7 +411,7 @@ static int bluesleep_start(void)
 {
 	int retval;
 	unsigned long irq_flags;
-	pr_info("bluesleep_start\n");
+	BT_INFO("bluesleep_start()\n");
 	spin_lock_irqsave(&rw_lock, irq_flags);
 
 	if (test_bit(BT_PROTO, &flags)) {
@@ -469,7 +466,7 @@ static int bluesleep_start(void)
 		free_irq(bsi->host_wake_irq, NULL);
 		goto fail;
 	}
-	BT_INFO("bluesleep_start-Success!! Enable BT_HOST_WAKE as wakeup interrupt");
+	BT_INFO("Bluesleep started successfully, enable BT_HOST_WAKE as wakeup interrupt");
 	set_bit(BT_PROTO, &flags);
 	#ifdef CONFIG_BT_CSR_7820
 	wake_lock(&bsi->wake_lock);
@@ -492,7 +489,7 @@ static void bluesleep_stop(void)
 #endif
 {
 	unsigned long irq_flags;
-	BT_INFO("bluesleep_stop :   start-->\n");
+	BT_INFO("bluesleep_stop() -->\n");
 
 	spin_lock_irqsave(&rw_lock, irq_flags);
 
@@ -525,7 +522,7 @@ static void bluesleep_stop(void)
 	wake_lock_timeout(&bsi->wake_lock, HZ / 2);
 	#endif
 
-	BT_INFO("bluesleep_stop :  <--end\n");
+	BT_INFO("bluesleep_stop() <--\n");
 }
 /**
  * Read the <code>BT_WAKE</code> GPIO pin value via the proc interface.
@@ -739,7 +736,7 @@ static int __init bluesleep_probe(struct platform_device *pdev)
 	res = platform_get_resource_byname(pdev, IORESOURCE_IO,
 				"gpio_host_wake");
 	if (!res) {
-		BT_ERR("couldn't find host_wake gpio\n");
+		BT_ERR("Couldn't find host_wake gpio\n");
 		ret = -ENODEV;
 		goto free_bsi;
 	}
@@ -759,7 +756,7 @@ static int __init bluesleep_probe(struct platform_device *pdev)
 	res = platform_get_resource_byname(pdev, IORESOURCE_IO,
 				"gpio_ext_wake");
 	if (!res) {
-		BT_ERR("couldn't find ext_wake gpio\n");
+		BT_ERR("Couldn't find ext_wake gpio\n");
 		ret = -ENODEV;
 		goto free_bt_host_wake;
 	}
@@ -777,7 +774,7 @@ static int __init bluesleep_probe(struct platform_device *pdev)
 
 	bsi->host_wake_irq = platform_get_irq_byname(pdev, "host_wake");
 	if (bsi->host_wake_irq < 0) {
-		BT_ERR("couldn't find host_wake irq\n");
+		BT_ERR("Couldn't find host_wake irq\n");
 		ret = -ENODEV;
 		goto free_bt_ext_wake;
 	}
@@ -841,7 +838,7 @@ static int __init bluesleep_init(void)
 	int retval;
 	struct proc_dir_entry *ent;
 
-	BT_INFO("bluesleep_init:MSM Sleep Mode Driver Ver %s", VERSION);
+	BT_INFO("Bluesleep_init: MSM Sleep Mode Driver Ver %s", VERSION);
 
 	retval = platform_driver_probe(&bluesleep_driver, bluesleep_probe);
 	if (retval)

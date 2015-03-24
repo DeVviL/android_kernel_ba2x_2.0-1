@@ -43,7 +43,7 @@
 
 /*#define CONFIG_LOAD_FILE*/
 
-#define PCAM_ENABLE_DEBUG
+//#define PCAM_ENABLE_DEBUG
 
 #ifdef PCAM_ENABLE_DEBUG
 #define CAMDRV_DEBUG(fmt, arg...)\

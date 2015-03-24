@@ -22,8 +22,8 @@
 ********************************************************************************************/
 /*  PCAM  */
 
-#define PCAM_ENABLE_DEBUG
-#ifdef PCAM_ENABLE_DEBUG
+#define PCAM_ENABLE_DEBUG 0
+#if PCAM_ENABLE_DEBUG
 #define CAMDRV_DEBUG(fmt, arg...) \
 			do { \
 			printk("[CAMDRV_DEBUG] %s:%d: " fmt "\n", \
